@@ -9,9 +9,9 @@ namespace aspnetplayground.Controllers
     public class HelloWorld2Controller : Controller
     {
         // GET: HelloWorld2
-        public ActionResult Index()
+        public String Index()
         {
-            return View();
+            return "Hello World2 fuck this shit";
         }
     }
 }
