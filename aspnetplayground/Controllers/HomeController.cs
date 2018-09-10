@@ -38,15 +38,63 @@ namespace aspnetplayground.Controllers
             return Json(Pokedex[Id], JsonRequestBehavior.AllowGet);
         }
 
-        public static Dictionary<int, Pokemon> Pokedex { private set; get; }
+        static Dictionary<int, Pokemon> Pokedex { set; get; }
+        static Dictionary<int, Models.Type> Types { set; get; }
+        static Dictionary<int, List<PokemonType>> PokemonTypes { set; get; }
         
         static HomeController()
         {
             // ScrapePokemonImages();
             
             Pokedex = new Dictionary<int, Pokemon>{};
-
-            var path = HostingEnvironment.MapPath(@"~/App_Data/PokemonImages.csv");
+            ParseCSV(HostingEnvironment.MapPath(@"~/App_Data/PokemonImages.csv"), fields =>
+            {
+                var id = Int32.Parse(fields[0]);
+                Pokedex[id] = new Pokemon
+                {
+                    id = id,
+                    name = fields[1],
+                    sprites = new Pokemon.SpriteList
+                    {
+                        front_default = fields[2]
+                    }
+                };
+            });
+            
+            Types = new Dictionary<int, Models.Type>{};
+            ParseCSV(HostingEnvironment.MapPath(@"~/App_Data/Types.csv"), fields =>
+            {
+                var id = Int32.Parse(fields[0]);
+                Types[id] = new Models.Type
+                {
+                    id = id,
+                    identifier = fields[1],
+                    generation_id = Int32.Parse(fields[2]),
+                    damage_class_id = Int32.Parse(fields[3])
+                };
+            });
+            
+            PokemonTypes = new Dictionary<int, List<PokemonType>>{};
+            ParseCSV(HostingEnvironment.MapPath(@"~/App_Data/PokemonTypes.csv"), fields =>
+            {
+                var id = Int32.Parse(fields[0]);
+                if (!PokemonTypes.ContainsKey(id))
+                {
+                    PokemonTypes[id] = new List<PokemonType>{};
+                }
+                
+                PokemonTypes[id].Add(new PokemonType
+                {
+                    pokemon_id = id,
+                    type_id = Int32.Parse(fields[1]),
+                    slot = Int32.Parse(fields[2])
+                });
+            });
+        }
+        
+        delegate void Parser(string[] fields);
+        
+        static void ParseCSV(string path, Parser p) {
             var parser = new TextFieldParser(path);
             parser.TextFieldType = FieldType.Delimited;
             parser.SetDelimiters(",");
@@ -54,10 +102,7 @@ namespace aspnetplayground.Controllers
             while (!parser.EndOfData) 
             {
                 string[] fields = parser.ReadFields();
-                var id = Int32.Parse(fields[0]);
-                var name = fields[1];
-                var icon = fields[2];
-                Pokedex[id] = new Pokemon(id, name, icon);
+                p(fields);
             }
         }
         
