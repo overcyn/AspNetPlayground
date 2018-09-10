@@ -11,4 +11,10 @@ namespace aspnetplayground.Models
         public int type_id { get; set; }
         public int slot { get; set; }
     }
+    
+    public class PokemonTypeRef
+    {
+        public int slot { get; set; }
+        public TypeRef type { get; set; }
+    }
 }

@@ -33,6 +33,7 @@ namespace aspnetplayground.Controllers
             return View();
         }
         
+        [AddCustomHeaderFilter]
         public ActionResult Pokemon(int Id)
         {
             return Json(Pokedex[Id], JsonRequestBehavior.AllowGet);
@@ -45,21 +46,6 @@ namespace aspnetplayground.Controllers
         static HomeController()
         {
             // ScrapePokemonImages();
-            
-            Pokedex = new Dictionary<int, Pokemon>{};
-            ParseCSV(HostingEnvironment.MapPath(@"~/App_Data/PokemonImages.csv"), fields =>
-            {
-                var id = Int32.Parse(fields[0]);
-                Pokedex[id] = new Pokemon
-                {
-                    id = id,
-                    name = fields[1],
-                    sprites = new Pokemon.SpriteList
-                    {
-                        front_default = fields[2]
-                    }
-                };
-            });
             
             Types = new Dictionary<int, Models.Type>{};
             ParseCSV(HostingEnvironment.MapPath(@"~/App_Data/Types.csv"), fields =>
@@ -89,6 +75,35 @@ namespace aspnetplayground.Controllers
                     type_id = Int32.Parse(fields[1]),
                     slot = Int32.Parse(fields[2])
                 });
+            });
+            
+            Pokedex = new Dictionary<int, Pokemon>{};
+            ParseCSV(HostingEnvironment.MapPath(@"~/App_Data/PokemonImages.csv"), fields =>
+            {
+                var id = Int32.Parse(fields[0]);
+                var pokemonTypes = PokemonTypes[id];
+                var types = new List<PokemonTypeRef>{};
+                foreach (var i in pokemonTypes)
+                {
+                    var t = Types[i.type_id];
+                    var typeRef = new TypeRef { name = t.identifier };
+                    var pokemonTypeRef = new PokemonTypeRef {
+                        slot = i.slot,
+                        type = typeRef
+                    };
+                    types.Add(pokemonTypeRef);
+                }
+                
+                Pokedex[id] = new Pokemon
+                {
+                    id = id,
+                    name = fields[1],
+                    sprites = new Pokemon.SpriteList
+                    {
+                        front_default = fields[2]
+                    },
+                    types = types
+                };
             });
         }
         

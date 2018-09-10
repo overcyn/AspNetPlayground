@@ -12,4 +12,9 @@ namespace aspnetplayground.Models
         public int generation_id { get; set; }
         public int damage_class_id { get; set; }
     }
+    
+    public class TypeRef
+    {
+        public string name { get; set; }
+    }
 }
