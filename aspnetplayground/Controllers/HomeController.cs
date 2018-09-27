@@ -5,6 +5,7 @@ using System.Web;
 using System.IO;
 using System.Web.Hosting;
 using System.Web.Mvc;
+using System.Net;
 using System.Text;
 using HtmlAgilityPack;
 using aspnetplayground.Models;
@@ -33,10 +34,44 @@ namespace aspnetplayground.Controllers
             return View();
         }
         
+        public ActionResult Sprite(int Id)
+        {
+            var path = HostingEnvironment.MapPath(@"~/App_Data/PokemonImages/" + Id.ToString() + ".png");
+            System.Diagnostics.Debug.WriteLine($"Image Path: {path}");
+            return File(path, @"image/png");
+        }
+        
         [AddCustomHeaderFilter]
         public ActionResult Pokemon(int Id)
-        {
-            return Json(Pokedex[Id], JsonRequestBehavior.AllowGet);
+        {            
+            var pokemon = Pokedex[Id];
+            var pokemonTypes = PokemonTypes[Id];
+            var types = new List<PokemonTypeRef>{};
+            foreach (var i in pokemonTypes)
+            {
+                var t = Types[i.type_id];
+                var typeRef = new TypeRef { name = t.identifier };
+                var pokemonTypeRef = new PokemonTypeRef {
+                    slot = i.slot,
+                    type = typeRef
+                };
+                types.Add(pokemonTypeRef);
+            }
+            
+            var req = System.Web.HttpContext.Current.Request;
+            var baseUrl = string.Format("{0}://{1}{2}", req.Url.Scheme, req.Url.Authority, Url.Content("~"));
+            var pokemonRef = new PokemonRef
+            {
+                id = Id,
+                name = pokemon.name,
+                sprites = new PokemonRef.SpriteList
+                {
+                    front_default = baseUrl + @"Home/Sprite/" + Id.ToString(),
+                },
+                types = types,
+            };
+            
+            return Json(pokemonRef, JsonRequestBehavior.AllowGet);
         }
 
         static Dictionary<int, Pokemon> Pokedex { set; get; }
@@ -45,7 +80,7 @@ namespace aspnetplayground.Controllers
         
         static HomeController()
         {
-            // ScrapePokemonImages();
+            ScrapePokemonImages();
             
             Types = new Dictionary<int, Models.Type>{};
             ParseCSV(HostingEnvironment.MapPath(@"~/App_Data/Types.csv"), fields =>
@@ -78,31 +113,13 @@ namespace aspnetplayground.Controllers
             });
             
             Pokedex = new Dictionary<int, Pokemon>{};
-            ParseCSV(HostingEnvironment.MapPath(@"~/App_Data/PokemonImages.csv"), fields =>
+            ParseCSV(HostingEnvironment.MapPath(@"~/App_Data/Pokemon.csv"), fields =>
             {
                 var id = Int32.Parse(fields[0]);
-                var pokemonTypes = PokemonTypes[id];
-                var types = new List<PokemonTypeRef>{};
-                foreach (var i in pokemonTypes)
-                {
-                    var t = Types[i.type_id];
-                    var typeRef = new TypeRef { name = t.identifier };
-                    var pokemonTypeRef = new PokemonTypeRef {
-                        slot = i.slot,
-                        type = typeRef
-                    };
-                    types.Add(pokemonTypeRef);
-                }
-                
                 Pokedex[id] = new Pokemon
                 {
                     id = id,
                     name = fields[1],
-                    sprites = new Pokemon.SpriteList
-                    {
-                        front_default = fields[2]
-                    },
-                    types = types
                 };
             });
         }
@@ -123,9 +140,7 @@ namespace aspnetplayground.Controllers
         
         static void ScrapePokemonImages()
         {
-            var imageCsvPath = HostingEnvironment.MapPath(@"~/App_Data/PokemonImages.csv");
-            var imageCsvWriter = new StreamWriter(imageCsvPath);
-            
+            var webClient = new WebClient();
             var csvPath = HostingEnvironment.MapPath(@"~/App_Data/Pokemon.csv");
             var parser = new TextFieldParser(csvPath);
             parser.TextFieldType = FieldType.Delimited;
@@ -135,15 +150,18 @@ namespace aspnetplayground.Controllers
             {
                 string[] fields = parser.ReadFields();
                 var id = Int32.Parse(fields[0]);
+                if (id < 781)
+                {
+                    continue;
+                }
                 var name = fields[1];
                 var bulbapediaIcon = fields[2];
                 var imageUrl = ScrapePokemonImageUrl(id, bulbapediaIcon != "" ? bulbapediaIcon : name);
                 
-                var line = string.Format("{0},{1},{2}", id, name, imageUrl);
-                imageCsvWriter.WriteLine(line);
-                System.Diagnostics.Debug.WriteLine(line);
+                var imagePath = HostingEnvironment.MapPath(@"~/App_Data/PokemonImages/"+id.ToString()+".png");
+                System.Diagnostics.Debug.WriteLine($"Image Path: {imageUrl} {imagePath}");
+                webClient.DownloadFile(imageUrl, imagePath);
             }
-            imageCsvWriter.Close();
         }
         
         static string ScrapePokemonImageUrl(int id, string name) 
@@ -163,6 +181,7 @@ namespace aspnetplayground.Controllers
                 var node = doc.DocumentNode.SelectSingleNode("//div[@class='fullImageLink']/a");
                 var imageUrl = node.Attributes["href"].Value;
                 imageUrl = imageUrl.TrimStart('/');
+                imageUrl = @"https://" + imageUrl;
                 return imageUrl;
             }
             catch (Exception e)
