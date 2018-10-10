@@ -147,9 +147,8 @@
     <Compile Include="App_Start\FilterConfig.cs" />
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="Controllers\AddCustomHeaderFilter.cs" />
-    <Compile Include="Controllers\HelloWorld2Controller.cs" />
-    <Compile Include="Controllers\HelloWorldController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
+    <Compile Include="Controllers\PokeapiController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
@@ -973,7 +972,6 @@
     <Content Include="ApplicationInsights.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="App_Data\PokemonImages.csv" />
     <Content Include="App_Data\PokemonTypes.csv" />
     <Content Include="App_Data\Types.csv" />
     <None Include="Properties\PublishProfiles\aspnetplayground20180909102606 - Web Deploy.pubxml" />
@@ -988,7 +986,9 @@
     <Content Include="Scripts\modernizr-2.6.2.js" />
     <Content Include="Scripts\respond.js" />
     <Content Include="Scripts\respond.min.js" />
-    <Content Include="Web.config" />
+    <Content Include="Web.config">
+      <SubType>Designer</SubType>
+    </Content>
     <Content Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
     </Content>
@@ -1006,6 +1006,7 @@
   <ItemGroup>
     <Folder Include="Views\HelloWorld2\" />
     <Folder Include="Views\HelloWorld\" />
+    <Folder Include="Views\Pokeapi\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="fonts\glyphicons-halflings-regular.woff" />
